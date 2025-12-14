@@ -5,6 +5,7 @@ A comprehensive motor control system for the N20 robotic base with PID-based spe
 ## Features
 
 - **PID Speed Control**: Closed-loop speed control using quadrature encoder feedback
+- **Position-Based Movement**: Move specific distances (cm/m) or turn specific angles (degrees)
 - **Serial Interface**: Configure and control the robot via serial commands
 - **Modular Design**: Easy to modify pin assignments and parameters
 - **Real-time Monitoring**: Check motor speeds, encoder counts, and system status
@@ -84,6 +85,7 @@ n20_robot_base/
 ├── config.h               # Robot parameters and PID gains
 ├── PIDController.h        # PID controller implementation
 ├── MotorController.h      # Motor control with encoder feedback
+├── MovementController.h   # Position-based movement (distance/angle)
 └── SerialCommands.h       # Serial command parser and interface
 ```
 
@@ -109,7 +111,9 @@ Default parameters (modify as needed):
 
 Connect via Serial Monitor at **115200 baud**. Commands are case-insensitive.
 
-### Movement Commands
+### Speed-Based Movement Commands
+
+Continuous movement at specified speeds (RPM).
 
 ```
 forward <speed>     - Move forward at specified speed (RPM)
@@ -130,6 +134,36 @@ speed 40            # Set both motors to 40 RPM
 stop                # Stop motors
 ```
 
+### Position-Based Movement Commands
+
+Move specific distances or turn specific angles. The robot automatically stops when the target is reached.
+
+```
+go <distance> <unit>  - Move forward/backward (units: cm, m, mm)
+                        Use negative distance for backward movement
+turn <angle>          - Turn specific angle in degrees
+                        Positive = turn right, Negative = turn left
+movespeed <speed>     - Set speed for position movements (default: 30 RPM)
+```
+
+**Examples:**
+```
+go 50 cm            # Move forward 50 centimeters
+go -30 cm           # Move backward 30 centimeters
+go 1.5 m            # Move forward 1.5 meters
+go 100 mm           # Move forward 100 millimeters
+turn 90             # Turn right 90 degrees
+turn -180           # Turn left 180 degrees
+turn 45             # Turn right 45 degrees
+movespeed 25        # Set position movement speed to 25 RPM
+```
+
+**Important Notes:**
+- Position-based movements require accurate wheel diameter and wheelbase settings
+- Use `wheel <diameter>` and `wheelbase <width>` to configure your robot
+- The robot will automatically stop when the target distance/angle is reached
+- Use `stop` to interrupt a movement in progress
+
 ### PID Configuration
 
 ```
@@ -148,17 +182,23 @@ pid right 2.5 0.8 0.15     # Adjust right motor PID
 ```
 wheel <diameter>    - Set wheel diameter in mm
 wheelbase <width>   - Set wheelbase width in mm
+caster <offset>     - Set caster offset from wheel axis in mm
 gear <ratio>        - Set gear ratio
 ppr <pulses>        - Set encoder pulses per revolution
+turncal <factor>    - Set turning calibration factor (0.8-1.2)
 ```
 
 **Examples:**
 ```
 wheel 65            # Set wheel diameter to 65mm
 wheelbase 150       # Set wheelbase to 150mm
+caster 130          # Set caster offset to 130mm
 gear 100            # Set gear ratio to 100:1
 ppr 480             # Set encoder PPR to 480
+turncal 1.05        # Calibrate turning (if robot turns too little)
 ```
+
+**For accurate positioning, see [CALIBRATION_GUIDE.md](CALIBRATION_GUIDE.md)**
 
 ### Status & Diagnostics
 
@@ -224,6 +264,48 @@ wheel 70            # 70mm diameter wheels
 gear 150            # 150:1 gear ratio
 ppr 360             # 360 PPR encoder
 config              # Verify changes
+```
+
+### Position-Based Movement Examples
+
+Navigate a square pattern:
+```
+# First, ensure your robot is configured correctly
+config              # Check wheel diameter and wheelbase
+
+# Navigate a 1m x 1m square
+go 1 m              # Move forward 1 meter
+turn 90             # Turn right 90 degrees
+go 1 m              # Move forward 1 meter
+turn 90             # Turn right 90 degrees
+go 1 m              # Move forward 1 meter
+turn 90             # Turn right 90 degrees
+go 1 m              # Move forward 1 meter
+turn 90             # Turn right 90 degrees (back to start)
+```
+
+Test positioning accuracy:
+```
+# Mark starting position
+go 50 cm            # Move forward 50cm
+turn 180            # Turn around
+go 50 cm            # Move back to start
+turn 180            # Face original direction
+
+# Check if robot returned to marked position
+# If not accurate, adjust wheel diameter or wheelbase
+```
+
+Obstacle avoidance pattern:
+```
+go 30 cm            # Approach obstacle
+turn -90            # Turn left
+go 20 cm            # Go around
+turn 90             # Turn right
+go 40 cm            # Pass obstacle
+turn 90             # Turn right
+go 20 cm            # Return to path
+turn -90            # Turn left to original heading
 ```
 
 ## PID Tuning Guide

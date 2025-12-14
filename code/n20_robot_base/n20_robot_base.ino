@@ -7,6 +7,7 @@
  * - Serial command interface
  * - Configurable parameters (wheel size, gear ratio, PID gains)
  * - Movement commands (forward, backward, turn, speed control)
+ * - Position-based movement (move X cm/m, turn X degrees)
  *
  * Hardware:
  * - Arduino Uno
@@ -21,6 +22,7 @@
 #include "pin_map.h"
 #include "config.h"
 #include "MotorController.h"
+#include "MovementController.h"
 #include "SerialCommands.h"
 
 // Global configuration instance
@@ -43,8 +45,11 @@ MotorController rightMotor(
   RIGHT_ENCODER_B
 );
 
+// Create movement controller
+MovementController movementCtrl(&leftMotor, &rightMotor);
+
 // Create serial command interface
-SerialCommands serialCmd(&leftMotor, &rightMotor);
+SerialCommands serialCmd(&leftMotor, &rightMotor, &movementCtrl);
 
 // Timing variables
 unsigned long lastControlUpdate = 0;
@@ -74,6 +79,7 @@ void loop() {
   if (currentTime - lastControlUpdate >= config.controlLoopInterval) {
     leftMotor.updateControl();
     rightMotor.updateControl();
+    movementCtrl.update();  // Update position-based movement state
     lastControlUpdate = currentTime;
   }
 }

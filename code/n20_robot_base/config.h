@@ -5,7 +5,17 @@
 struct RobotConfig {
   // Wheel parameters
   float wheelDiameter = 65.0;        // Wheel diameter in mm
-  float wheelBase = 150.0;           // Distance between wheels in mm
+  float wheelBase = 150.0;           // Distance between left and right wheels in mm
+
+  // Robot geometry (three-point contact system)
+  float casterOffset = 75.0;         // Distance from drive wheel axis to caster (mm)
+                                     // Positive = caster in front, Negative = caster in back
+  float wheelAxisOffset = 0.0;       // Offset of wheel axis from robot center (mm)
+                                     // Positive = wheels forward of center
+
+  // Turning calibration
+  float turningCalibration = 1.0;    // Multiplier to correct turning accuracy (0.8-1.2)
+                                     // <1.0 if robot turns too much, >1.0 if too little
 
   // Motor and encoder parameters
   int encoderPPR = 480;              // Pulses per revolution (N20 with quad encoder)
