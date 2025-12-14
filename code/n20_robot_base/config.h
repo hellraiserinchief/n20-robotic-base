@@ -17,6 +17,10 @@ struct RobotConfig {
   float turningCalibration = 1.0;    // Multiplier to correct turning accuracy (0.8-1.2)
                                      // <1.0 if robot turns too much, >1.0 if too little
 
+  // WASD control mode
+  float wasdSpeed = 30.0;            // Default speed for WASD mode (RPM)
+  float wasdTurnSpeed = 25.0;        // Default turning speed for WASD mode (RPM)
+
   // Motor and encoder parameters
   int encoderPPR = 480;              // Pulses per revolution (N20 with quad encoder)
   float gearRatio = 100.0;           // Gear ratio (typical for N20 motors)

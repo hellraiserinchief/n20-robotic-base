@@ -164,6 +164,51 @@ movespeed 25        # Set position movement speed to 25 RPM
 - The robot will automatically stop when the target distance/angle is reached
 - Use `stop` to interrupt a movement in progress
 
+### WASD Keyboard Control Mode
+
+Real-time keyboard control for manual driving. No need to press Enter after each key.
+
+```
+wasd                - Enter WASD mode
+exit                - Exit WASD mode (or press Q in WASD mode)
+wasdspeed <speed>   - Set WASD movement speed (default: 30 RPM)
+```
+
+**WASD Mode Controls:**
+```
+W - Move forward
+S - Move backward
+A - Turn left (rotate counter-clockwise)
+D - Turn right (rotate clockwise)
+X - Stop (or Space)
+Q - Exit WASD mode
+```
+
+**Example Usage:**
+```
+# Set desired speed
+wasdspeed 25        # Set WASD speed to 25 RPM
+
+# Enter WASD mode
+wasd
+
+# Now press keys directly:
+# W W W - robot moves forward
+# X - robot stops
+# D D - robot turns right
+# W W - robot moves forward
+# Q - exit WASD mode
+
+# Back to normal command mode
+```
+
+**Important:**
+- In WASD mode, you don't need to press Enter
+- Each keypress is processed immediately
+- Use your serial terminal's local echo to see what you're typing
+- Press Q or type 'exit' (with Enter) to return to command mode
+- Serial monitor must NOT add line ending for best experience
+
 ### PID Configuration
 
 ```
@@ -224,6 +269,33 @@ left 15             # Robot turns left
 stop                # Stop
 right 15            # Robot turns right
 stop                # Stop
+```
+
+### Manual Control with WASD Mode
+```
+# Enter WASD mode for real-time control
+wasd
+
+# ========== WASD MODE ACTIVE ==========
+# W - Forward    |  A - Turn Left
+# S - Backward   |  D - Turn Right
+# X - Stop       |  Q - Exit WASD Mode
+# ======================================
+
+# Now just press keys (no Enter needed):
+w                   # ↑ Forward (robot moves)
+w                   # Keep moving forward
+x                   # ■ Stop
+d                   # → Turn Right
+d                   # Keep turning
+x                   # ■ Stop
+a                   # ← Turn Left
+s                   # ↓ Backward
+x                   # ■ Stop
+q                   # Exit WASD mode
+
+# You're back in command mode
+help
 ```
 
 ### Check System Status

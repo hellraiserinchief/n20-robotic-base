@@ -11,10 +11,11 @@ private:
   MotorController* rightMotor;
   MovementController* movementCtrl;
   String inputBuffer;
+  bool wasdMode;
 
 public:
   SerialCommands(MotorController* left, MotorController* right, MovementController* movement)
-    : leftMotor(left), rightMotor(right), movementCtrl(movement), inputBuffer("") {}
+    : leftMotor(left), rightMotor(right), movementCtrl(movement), inputBuffer(""), wasdMode(false) {}
 
   void begin(long baudRate = 115200) {
     Serial.begin(baudRate);
@@ -28,13 +29,19 @@ public:
     while (Serial.available() > 0) {
       char c = Serial.read();
 
-      if (c == '\n' || c == '\r') {
-        if (inputBuffer.length() > 0) {
-          processCommand(inputBuffer);
-          inputBuffer = "";
-        }
+      // In WASD mode, process single characters immediately
+      if (wasdMode) {
+        processWASDCommand(c);
       } else {
-        inputBuffer += c;
+        // Normal command mode - wait for newline
+        if (c == '\n' || c == '\r') {
+          if (inputBuffer.length() > 0) {
+            processCommand(inputBuffer);
+            inputBuffer = "";
+          }
+        } else {
+          inputBuffer += c;
+        }
       }
     }
   }
@@ -107,6 +114,16 @@ private:
     else if (cmd.startsWith("turncal ")) {
       setTurningCalibration(cmd.substring(8).toFloat());
     }
+    else if (cmd.startsWith("wasdspeed ")) {
+      setWASDSpeed(cmd.substring(10).toFloat());
+    }
+    // WASD mode control
+    else if (cmd.startsWith("wasd")) {
+      enterWASDMode();
+    }
+    else if (cmd.startsWith("exit")) {
+      exitWASDMode();
+    }
     // Status and diagnostics
     else if (cmd.startsWith("status")) {
       printStatus();
@@ -134,6 +151,10 @@ private:
     Serial.println(F("go <dist> <unit>   - Move forward/back (e.g., 'go 50 cm', 'go -1 m')"));
     Serial.println(F("turn <angle>       - Turn angle in degrees (+ right, - left)"));
     Serial.println(F("movespeed <speed>  - Set speed for position movements (RPM)"));
+    Serial.println(F("\n--- WASD Keyboard Control ---"));
+    Serial.println(F("wasd               - Enter WASD mode (W/A/S/D keys, no Enter)"));
+    Serial.println(F("wasdspeed <speed>  - Set WASD movement speed (RPM)"));
+    Serial.println(F("exit               - Exit WASD mode (or press 'Q' in WASD mode)"));
     Serial.println(F("\n--- PID Configuration ---"));
     Serial.println(F("pid left <kp> <ki> <kd>   - Set left motor PID gains"));
     Serial.println(F("pid right <kp> <ki> <kd>  - Set right motor PID gains"));
@@ -403,6 +424,97 @@ private:
     Serial.print(F("Position movement speed set to "));
     Serial.print(speed);
     Serial.println(F(" RPM"));
+  }
+
+  // WASD mode functions
+  void enterWASDMode() {
+    wasdMode = true;
+    movementCtrl->setSpeedMode();  // Ensure we're in speed control mode
+    Serial.println(F("\n========== WASD MODE ACTIVE =========="));
+    Serial.println(F("W - Forward    |  A - Turn Left"));
+    Serial.println(F("S - Backward   |  D - Turn Right"));
+    Serial.println(F("X - Stop       |  Q - Exit WASD Mode"));
+    Serial.println(F("======================================"));
+    Serial.print(F("Speed: "));
+    Serial.print(config.wasdSpeed);
+    Serial.print(F(" RPM | Turn: "));
+    Serial.print(config.wasdTurnSpeed);
+    Serial.println(F(" RPM"));
+    Serial.println(F("Press keys (no Enter needed)"));
+    Serial.println();
+  }
+
+  void exitWASDMode() {
+    wasdMode = false;
+    leftMotor->stop();
+    rightMotor->stop();
+    Serial.println(F("\n--- WASD Mode Exited ---"));
+    Serial.println(F("Returning to command mode"));
+    Serial.println(F("Type 'help' for commands\n"));
+  }
+
+  void setWASDSpeed(float speed) {
+    config.wasdSpeed = speed;
+    Serial.print(F("WASD forward/backward speed set to "));
+    Serial.print(speed);
+    Serial.println(F(" RPM"));
+  }
+
+  void processWASDCommand(char c) {
+    // Convert to lowercase
+    c = tolower(c);
+
+    switch(c) {
+      case 'w':
+        // Forward
+        leftMotor->setTargetSpeed(config.wasdSpeed);
+        rightMotor->setTargetSpeed(config.wasdSpeed);
+        Serial.println(F("↑ Forward"));
+        break;
+
+      case 's':
+        // Backward
+        leftMotor->setTargetSpeed(-config.wasdSpeed);
+        rightMotor->setTargetSpeed(-config.wasdSpeed);
+        Serial.println(F("↓ Backward"));
+        break;
+
+      case 'a':
+        // Turn left
+        leftMotor->setTargetSpeed(-config.wasdTurnSpeed);
+        rightMotor->setTargetSpeed(config.wasdTurnSpeed);
+        Serial.println(F("← Turn Left"));
+        break;
+
+      case 'd':
+        // Turn right
+        leftMotor->setTargetSpeed(config.wasdTurnSpeed);
+        rightMotor->setTargetSpeed(-config.wasdTurnSpeed);
+        Serial.println(F("→ Turn Right"));
+        break;
+
+      case 'x':
+      case ' ':
+        // Stop
+        leftMotor->stop();
+        rightMotor->stop();
+        Serial.println(F("■ Stop"));
+        break;
+
+      case 'q':
+        // Exit WASD mode
+        exitWASDMode();
+        break;
+
+      case '\n':
+      case '\r':
+        // Ignore newlines in WASD mode
+        break;
+
+      default:
+        // Ignore other characters
+        break;
+    }
   }
 
   // Helper function to parse three floats from a string
